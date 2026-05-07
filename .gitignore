@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+.env
+.whoop-token.json
+dist/
+build/
+*** Add File: /Users/rai/Developer/oss/whoop-mcp/.env.example
+WHOOP_CLIENT_ID=your_client_id
+WHOOP_CLIENT_SECRET=your_client_secret
+WHOOP_REDIRECT_URI=http://127.0.0.1:8765/callback
+WHOOP_TOKEN_FILE=.whoop-token.json
+WHOOP_SCOPES=offline read:profile read:body_measurement read:recovery read:cycles read:sleep read:workout
+*** Add File: /Users/rai/Developer/oss/whoop-mcp/src/whoop_mcp/__init__.py
+"""WHOOP MCP server package."""
+
+from whoop_mcp.server import mcp
+
+__all__ = ["mcp"]
