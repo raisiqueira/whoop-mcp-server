@@ -23,6 +23,7 @@ dev = [
 [project.scripts]
 whoop-mcp = "whoop_mcp.server:main"
 whoop-mcp-login = "whoop_mcp.login:main"
+whoop-mcp-generate-key = "whoop_mcp.keys:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/whoop_mcp"]

@@ -1,0 +1,21 @@
+services:
+  whoop-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: whoop-mcp:latest
+    container_name: whoop-mcp
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WHOOP_MCP_TRANSPORT: http
+      WHOOP_MCP_HOST: 0.0.0.0
+      WHOOP_MCP_PORT: 8000
+      WHOOP_MCP_PATH: /mcp
+      WHOOP_MCP_STATELESS_HTTP: "true"
+      WHOOP_TOKEN_FILE: /data/whoop-token.json
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./.whoop-token.json:/data/whoop-token.json

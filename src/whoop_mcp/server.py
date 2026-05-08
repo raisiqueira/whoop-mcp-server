@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 from fastmcp import FastMCP
+from fastmcp.server.auth import StaticTokenVerifier
 
 from whoop_mcp.auth import TokenStore, build_authorization_url, exchange_code, refresh_token
 from whoop_mcp.client import WhoopClient
@@ -15,6 +16,23 @@ settings = Settings.from_env()
 token_store = TokenStore(settings.token_file)
 client = WhoopClient(settings, token_store)
 
+
+def build_auth_provider() -> StaticTokenVerifier | None:
+    if not settings.mcp_api_key:
+        return None
+    return StaticTokenVerifier(
+        tokens={
+            settings.mcp_api_key: {
+                "client_id": "whoop-mcp-client",
+                "scopes": ["whoop:read"],
+            }
+        },
+        required_scopes=["whoop:read"],
+    )
+
+
+auth_provider = build_auth_provider()
+
 mcp = FastMCP(
     "WHOOP",
     instructions=(
@@ -22,7 +40,9 @@ mcp = FastMCP(
         "Use get_health_overview first for summaries, then drill into profile, recovery, sleep, "
         "cycle, and workout tools for detail."
     ),
+    auth=auth_provider,
 )
+app = mcp.http_app(path=settings.path, stateless_http=settings.stateless_http)
 
 
 def _days_ago_iso(days: int) -> str:
@@ -45,6 +65,7 @@ def auth_status() -> dict[str, Any]:
     """Show whether WHOOP credentials and user tokens are configured locally."""
     status = client.get_token_status()
     status["has_client_credentials"] = bool(settings.client_id and settings.client_secret)
+    status["http_auth_enabled"] = auth_provider is not None
     status["redirect_uri"] = settings.redirect_uri
     status["default_scopes"] = list(settings.scopes)
     return status
@@ -222,7 +243,16 @@ def get_health_overview(days: int = 7, workout_limit: int = 5) -> dict[str, Any]
 
 
 def main() -> None:
-    mcp.run()
+    run_kwargs: dict[str, Any] = {}
+    if settings.host:
+        run_kwargs["host"] = settings.host
+    if settings.port:
+        run_kwargs["port"] = settings.port
+    if settings.path:
+        run_kwargs["path"] = settings.path
+    if settings.stateless_http:
+        run_kwargs["stateless_http"] = True
+    mcp.run(transport=settings.transport, **run_kwargs)
 
 
 if __name__ == "__main__":

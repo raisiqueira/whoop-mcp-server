@@ -36,6 +36,12 @@ class Settings:
     token_file: Path
     scopes: tuple[str, ...]
     api_base_url: str = "https://api.prod.whoop.com"
+    mcp_api_key: str | None = None
+    transport: str | None = None
+    host: str | None = None
+    port: int | None = None
+    path: str | None = None
+    stateless_http: bool = False
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -47,6 +53,15 @@ class Settings:
             token_file=Path(os.getenv("WHOOP_TOKEN_FILE", ".whoop-token.json")).expanduser(),
             scopes=_split_scopes(os.getenv("WHOOP_SCOPES")),
             api_base_url=os.getenv("WHOOP_API_BASE_URL", "https://api.prod.whoop.com").rstrip("/"),
+            mcp_api_key=os.getenv("WHOOP_MCP_API_KEY"),
+            transport=os.getenv("WHOOP_MCP_TRANSPORT"),
+            host=os.getenv("WHOOP_MCP_HOST"),
+            port=int(os.getenv("WHOOP_MCP_PORT", "8000")),
+            path=os.getenv("WHOOP_MCP_PATH"),
+            stateless_http=os.getenv(
+                "WHOOP_MCP_STATELESS_HTTP",
+                "",
+            ).lower() in {"1", "true", "yes", "on"},
         )
 
     def require_oauth_client(self) -> None:

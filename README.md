@@ -36,6 +36,14 @@ make sync
 make env
 ```
 
+Generate an HTTP bearer key:
+
+```bash
+make gen-key
+```
+
+Then set the generated value in `.env` as `WHOOP_MCP_API_KEY=...`.
+
 ## Authenticate once
 
 Run the local login helper:
@@ -73,6 +81,12 @@ Or:
 make run
 ```
 
+For local HTTP usage:
+
+```bash
+make run-http
+```
+
 Or through the FastMCP CLI:
 
 ```bash
@@ -84,6 +98,116 @@ FastMCP also supports HTTP transport:
 ```bash
 uv run fastmcp run src/whoop_mcp/server.py --transport http --host 127.0.0.1 --port 8000
 ```
+
+The HTTP endpoint is exposed at `http://127.0.0.1:8000/mcp` by default.
+
+## HTTP auth
+
+If `WHOOP_MCP_API_KEY` is set, FastMCP protects the HTTP transport and clients must send:
+
+```text
+Authorization: Bearer <your-key>
+```
+
+Generate a key with:
+
+```bash
+make gen-key
+```
+
+This uses FastMCP's built-in static bearer-token verifier. It is appropriate for a private self-hosted setup behind your own tunnel, but it is still a shared secret, so rotate it if it leaks.
+
+## Docker
+
+Build the image:
+
+```bash
+make docker-build
+```
+
+Run it over HTTP:
+
+```bash
+make docker-run-http
+```
+
+That container command:
+
+- binds the server to `0.0.0.0:8000`
+- exposes the MCP endpoint at `/mcp`
+- mounts your local `.whoop-token.json` into `/data/whoop-token.json`
+- reads WHOOP credentials from `.env`
+- enforces bearer auth if `WHOOP_MCP_API_KEY` is present in `.env`
+
+Equivalent raw Docker command:
+
+```bash
+docker build -t whoop-mcp .
+docker run --rm -it \
+  -p 8000:8000 \
+  --env-file .env \
+  -v "$(pwd)/.whoop-token.json:/data/whoop-token.json" \
+  whoop-mcp
+```
+
+## Docker Compose
+
+For the Raspberry Pi workflow, use Compose:
+
+```bash
+make compose-up
+```
+
+Or directly:
+
+```bash
+docker compose up -d --build
+```
+
+Useful commands:
+
+```bash
+make compose-logs
+make compose-down
+```
+
+The compose stack is defined in [docker-compose.yml](/Users/rai/Developer/oss/whoop-mcp/docker-compose.yml:1) and:
+
+- builds from the local `Dockerfile`
+- exposes port `8000`
+- mounts `./.whoop-token.json` into `/data/whoop-token.json`
+- reads WHOOP credentials and `WHOOP_MCP_API_KEY` from `.env`
+- restarts automatically with `unless-stopped`
+
+For Raspberry Pi 4, `python:3.12-slim` is multi-arch, so the same `Dockerfile` should build on ARM64. If your Pi OS is 32-bit, move it to a 64-bit image first. The modern Python base images and FastMCP dependencies are much less predictable on 32-bit ARM.
+
+### Cloudflare Tunnel
+
+Once the container is running on the Pi, expose `http://127.0.0.1:8000` with your Cloudflare Tunnel and point the public hostname to the MCP endpoint.
+
+Example public URL:
+
+```text
+https://whoop-mcp.your-domain.com/mcp
+```
+
+Clients should use the public MCP URL plus your bearer key.
+
+For FastMCP clients, the auth shape is:
+
+```python
+from fastmcp import Client
+
+async with Client(
+    "https://whoop-mcp.your-domain.com/mcp",
+    auth="your-generated-bearer-key",
+) as client:
+    await client.ping()
+```
+
+### Important security note
+
+This server exposes your WHOOP health data to whoever can reach the MCP endpoint and use the tools. Do not publish it on the open internet without an access-control layer in front of it. A Cloudflare Tunnel alone is not enough if the hostname is public and unprotected.
 
 ## Inspector
 
@@ -164,3 +288,4 @@ uv run ruff check .
 - `get_health_overview` is intentionally compact. The idea is to give ChatGPT a strong starting point and then let it ask for more specific WHOOP records through the other tools.
 - WHOOP access tokens are short-lived. The server refreshes them automatically when a refresh token is available.
 - The login helper assumes a localhost redirect URI. If you use a non-local redirect URI, complete OAuth outside the helper and use the manual exchange tool instead.
+- HTTP deployment is controlled through `WHOOP_MCP_TRANSPORT`, `WHOOP_MCP_HOST`, `WHOOP_MCP_PORT`, `WHOOP_MCP_PATH`, and `WHOOP_MCP_STATELESS_HTTP`.
