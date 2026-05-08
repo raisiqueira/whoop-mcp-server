@@ -139,7 +139,7 @@ Recommended env values:
 
 ```bash
 WHOOP_MCP_AUTH_MODE=oidc
-WHOOP_MCP_BASE_URL=https://whoop.raisiqueira.io
+WHOOP_MCP_BASE_URL=https://whoop.<your-domain>.com
 WHOOP_MCP_OIDC_CONFIG_URL=https://auth.example.com/application/o/whoop-mcp/.well-known/openid-configuration
 WHOOP_MCP_OIDC_CLIENT_ID=your_authentik_client_id
 WHOOP_MCP_OIDC_CLIENT_SECRET=your_authentik_client_secret
@@ -150,20 +150,20 @@ WHOOP_MCP_OIDC_REDIRECT_PATH=/auth/callback
 For Authentik, create an OAuth2/OpenID Provider and Application, then configure:
 
 - OpenID Configuration URL: `https://auth.example.com/application/o/whoop-mcp/.well-known/openid-configuration`
-- Redirect URI: `https://whoop.raisiqueira.io/auth/callback`
+- Redirect URI: `https://whoop.<your-domain>.com/auth/callback`
 - Client type: confidential
 - Scopes: at least `openid profile email`
 
 The MCP endpoint stays:
 
 ```text
-https://whoop.raisiqueira.io/mcp
+https://whoop.<your-domain>.com/mcp
 ```
 
 The OAuth callback for the MCP server is:
 
 ```text
-https://whoop.raisiqueira.io/auth/callback
+https://whoop.<your-domain>.com/auth/callback
 ```
 
 FastMCP's OIDC proxy is the recommended path for ChatGPT and Claude, because both products support OAuth-based remote MCP connectors more cleanly than a shared bearer token.
@@ -222,13 +222,32 @@ make compose-logs
 make compose-down
 ```
 
-The compose stack is defined in [docker-compose.yml](/Users/rai/Developer/oss/whoop-mcp/docker-compose.yml:1) and:
+The compose stack is defined in `docker-compose.yml` and:
 
 - builds from the local `Dockerfile`
-- exposes port `8000`
+- binds the server only on `127.0.0.1:8000` for tunnel-friendly local exposure
 - mounts `./.whoop-token.json` into `/data/whoop-token.json`
-- reads WHOOP credentials and `WHOOP_MCP_API_KEY` from `.env`
+- reads WHOOP credentials, static token settings, and OIDC settings from `.env`
 - restarts automatically with `unless-stopped`
+
+For Authentik-backed OAuth via Compose, set these in `.env`:
+
+```bash
+WHOOP_MCP_AUTH_MODE=oidc
+WHOOP_MCP_BASE_URL=https://whoop.<your-domain>.com
+WHOOP_MCP_OIDC_CONFIG_URL=https://auth.example.com/application/o/whoop-mcp/.well-known/openid-configuration
+WHOOP_MCP_OIDC_CLIENT_ID=your_authentik_client_id
+WHOOP_MCP_OIDC_CLIENT_SECRET=your_authentik_client_secret
+WHOOP_MCP_OIDC_SCOPES=openid profile email
+WHOOP_MCP_OIDC_REDIRECT_PATH=/auth/callback
+```
+
+Then restart:
+
+```bash
+make compose-down
+make compose-up
+```
 
 For Raspberry Pi 4, `python:3.12-slim` is multi-arch, so the same `Dockerfile` should build on ARM64. If your Pi OS is 32-bit, move it to a 64-bit image first. The modern Python base images and FastMCP dependencies are much less predictable on 32-bit ARM.
 
