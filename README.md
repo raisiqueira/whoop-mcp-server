@@ -44,6 +44,12 @@ make gen-key
 
 Then set the generated value in `.env` as `WHOOP_MCP_API_KEY=...`.
 
+By default, the example env uses:
+
+```bash
+WHOOP_MCP_AUTH_MODE=static_token
+```
+
 ## Authenticate once
 
 Run the local login helper:
@@ -103,7 +109,15 @@ The HTTP endpoint is exposed at `http://127.0.0.1:8000/mcp` by default.
 
 ## HTTP auth
 
-If `WHOOP_MCP_API_KEY` is set, FastMCP protects the HTTP transport and clients must send:
+This server supports three MCP auth modes:
+
+- `none`
+- `static_token`
+- `oidc`
+
+### Static bearer token
+
+If `WHOOP_MCP_AUTH_MODE=static_token`, FastMCP protects the HTTP transport and clients must send:
 
 ```text
 Authorization: Bearer <your-key>
@@ -116,6 +130,43 @@ make gen-key
 ```
 
 This uses FastMCP's built-in static bearer-token verifier. It is appropriate for a private self-hosted setup behind your own tunnel, but it is still a shared secret, so rotate it if it leaks.
+
+### OIDC with Authentik
+
+If `WHOOP_MCP_AUTH_MODE=oidc`, FastMCP uses an OIDC proxy so ChatGPT, Claude, and other MCP clients can authenticate through Authentik.
+
+Recommended env values:
+
+```bash
+WHOOP_MCP_AUTH_MODE=oidc
+WHOOP_MCP_BASE_URL=https://whoop.raisiqueira.io
+WHOOP_MCP_OIDC_CONFIG_URL=https://auth.example.com/application/o/whoop-mcp/.well-known/openid-configuration
+WHOOP_MCP_OIDC_CLIENT_ID=your_authentik_client_id
+WHOOP_MCP_OIDC_CLIENT_SECRET=your_authentik_client_secret
+WHOOP_MCP_OIDC_SCOPES=openid profile email
+WHOOP_MCP_OIDC_REDIRECT_PATH=/auth/callback
+```
+
+For Authentik, create an OAuth2/OpenID Provider and Application, then configure:
+
+- OpenID Configuration URL: `https://auth.example.com/application/o/whoop-mcp/.well-known/openid-configuration`
+- Redirect URI: `https://whoop.raisiqueira.io/auth/callback`
+- Client type: confidential
+- Scopes: at least `openid profile email`
+
+The MCP endpoint stays:
+
+```text
+https://whoop.raisiqueira.io/mcp
+```
+
+The OAuth callback for the MCP server is:
+
+```text
+https://whoop.raisiqueira.io/auth/callback
+```
+
+FastMCP's OIDC proxy is the recommended path for ChatGPT and Claude, because both products support OAuth-based remote MCP connectors more cleanly than a shared bearer token.
 
 ## Docker
 
@@ -137,7 +188,7 @@ That container command:
 - exposes the MCP endpoint at `/mcp`
 - mounts your local `.whoop-token.json` into `/data/whoop-token.json`
 - reads WHOOP credentials from `.env`
-- enforces bearer auth if `WHOOP_MCP_API_KEY` is present in `.env`
+- enforces the auth mode configured in `.env`
 
 Equivalent raw Docker command:
 
@@ -205,6 +256,18 @@ async with Client(
     await client.ping()
 ```
 
+For OAuth-enabled clients, use the standard FastMCP OAuth mode instead of a static bearer token:
+
+```python
+from fastmcp import Client
+
+async with Client(
+    "https://whoop-mcp.your-domain.com/mcp",
+    auth="oauth",
+) as client:
+    await client.ping()
+```
+
 ### Important security note
 
 This server exposes your WHOOP health data to whoever can reach the MCP endpoint and use the tools. Do not publish it on the open internet without an access-control layer in front of it. A Cloudflare Tunnel alone is not enough if the hostname is public and unprotected.
@@ -215,6 +278,26 @@ Using the MCP Inspector:
 
 ```bash
 make inspect
+```
+
+Using the MCP Inspector against a remote HTTP server:
+
+```bash
+make inspect-remote
+```
+
+With a custom URL:
+
+```bash
+make inspect-remote REMOTE_MCP_URL=http://pi01.local:8000/mcp
+```
+
+With bearer auth:
+
+```bash
+make inspect-remote \
+  REMOTE_MCP_URL=http://pi01.local:8000/mcp \
+  REMOTE_MCP_AUTH_HEADER="Authorization: Bearer your-key"
 ```
 
 Using the module entrypoint:
@@ -289,3 +372,4 @@ uv run ruff check .
 - WHOOP access tokens are short-lived. The server refreshes them automatically when a refresh token is available.
 - The login helper assumes a localhost redirect URI. If you use a non-local redirect URI, complete OAuth outside the helper and use the manual exchange tool instead.
 - HTTP deployment is controlled through `WHOOP_MCP_TRANSPORT`, `WHOOP_MCP_HOST`, `WHOOP_MCP_PORT`, `WHOOP_MCP_PATH`, and `WHOOP_MCP_STATELESS_HTTP`.
+- MCP auth is controlled through `WHOOP_MCP_AUTH_MODE`. Use `static_token` for private testing and `oidc` for ChatGPT/Claude-friendly OAuth.

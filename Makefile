@@ -2,8 +2,10 @@ PYTHON ?= python3
 UV ?= uv
 INSPECTOR ?= npx -y @modelcontextprotocol/inspector
 DOCKER_IMAGE ?= whoop-mcp
+REMOTE_MCP_URL ?= http://pi01.local:8000/mcp
+REMOTE_MCP_AUTH_HEADER ?=
 
-.PHONY: help sync sync-dev env gen-key login run run-http run-module inspect inspect-module inspect-fastmcp docker-build docker-run docker-run-http compose-up compose-down compose-logs test lint
+.PHONY: help sync sync-dev env gen-key login run run-http run-module inspect inspect-remote inspect-module inspect-fastmcp docker-build docker-run docker-run-http compose-up compose-down compose-logs test lint
 
 help:
 	@echo "Available targets:"
@@ -16,6 +18,7 @@ help:
 	@echo "  make run-http        Run the WHOOP MCP server over HTTP on :8000"
 	@echo "  make run-module      Run the WHOOP MCP server via python -m"
 	@echo "  make inspect         Open MCP Inspector against the installed script"
+	@echo "  make inspect-remote  Open MCP Inspector for a remote HTTP MCP URL"
 	@echo "  make inspect-module  Open MCP Inspector against python -m whoop_mcp.server"
 	@echo "  make inspect-fastmcp Open FastMCP dev inspector"
 	@echo "  make docker-build    Build the Docker image"
@@ -52,6 +55,13 @@ run-module:
 
 inspect:
 	$(INSPECTOR) $(UV) run whoop-mcp
+
+inspect-remote:
+	@if [ -n "$(REMOTE_MCP_AUTH_HEADER)" ]; then \
+		$(INSPECTOR) --transport http --server-url "$(REMOTE_MCP_URL)" --header "$(REMOTE_MCP_AUTH_HEADER)"; \
+	else \
+		$(INSPECTOR) --transport http --server-url "$(REMOTE_MCP_URL)"; \
+	fi
 
 inspect-module:
 	$(INSPECTOR) $(UV) run $(PYTHON) -m whoop_mcp.server

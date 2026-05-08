@@ -5,7 +5,8 @@ from typing import Any
 
 import httpx
 from fastmcp import FastMCP
-from fastmcp.server.auth import StaticTokenVerifier
+from fastmcp.server.auth import AuthProvider, StaticTokenVerifier
+from fastmcp.server.auth.oidc_proxy import OIDCProxy
 
 from whoop_mcp.auth import TokenStore, build_authorization_url, exchange_code, refresh_token
 from whoop_mcp.client import WhoopClient
@@ -17,17 +18,40 @@ token_store = TokenStore(settings.token_file)
 client = WhoopClient(settings, token_store)
 
 
-def build_auth_provider() -> StaticTokenVerifier | None:
-    if not settings.mcp_api_key:
+def build_auth_provider() -> AuthProvider | None:
+    if settings.auth_mode == "none":
         return None
-    return StaticTokenVerifier(
-        tokens={
-            settings.mcp_api_key: {
-                "client_id": "whoop-mcp-client",
-                "scopes": ["whoop:read"],
-            }
-        },
-        required_scopes=["whoop:read"],
+    if settings.auth_mode == "static_token":
+        if not settings.mcp_api_key:
+            raise RuntimeError(
+                "WHOOP_MCP_AUTH_MODE=static_token requires WHOOP_MCP_API_KEY to be set."
+            )
+        return StaticTokenVerifier(
+            tokens={
+                settings.mcp_api_key: {
+                    "client_id": "whoop-mcp-client",
+                    "scopes": ["whoop:read"],
+                }
+            },
+            required_scopes=["whoop:read"],
+        )
+    if settings.auth_mode == "oidc":
+        settings.require_mcp_oidc()
+        oidc_kwargs: dict[str, Any] = {
+            "config_url": settings.oidc_config_url,
+            "client_id": settings.oidc_client_id,
+            "client_secret": settings.oidc_client_secret,
+            "base_url": settings.public_base_url,
+            "required_scopes": list(settings.oidc_scopes),
+            "redirect_path": settings.oidc_redirect_path,
+        }
+        if settings.oidc_allowed_client_redirect_uris:
+            oidc_kwargs["allowed_client_redirect_uris"] = list(
+                settings.oidc_allowed_client_redirect_uris
+            )
+        return OIDCProxy(**oidc_kwargs)
+    raise RuntimeError(
+        "Unsupported WHOOP_MCP_AUTH_MODE. Expected one of: none, static_token, oidc."
     )
 
 
@@ -66,8 +90,17 @@ def auth_status() -> dict[str, Any]:
     status = client.get_token_status()
     status["has_client_credentials"] = bool(settings.client_id and settings.client_secret)
     status["http_auth_enabled"] = auth_provider is not None
+    status["http_auth_mode"] = settings.auth_mode
+    status["public_base_url"] = settings.public_base_url
     status["redirect_uri"] = settings.redirect_uri
     status["default_scopes"] = list(settings.scopes)
+    if settings.auth_mode == "oidc":
+        status["oidc"] = {
+            "config_url": settings.oidc_config_url,
+            "redirect_path": settings.oidc_redirect_path,
+            "required_scopes": list(settings.oidc_scopes),
+            "allowed_client_redirect_uris": list(settings.oidc_allowed_client_redirect_uris),
+        }
     return status
 
 
