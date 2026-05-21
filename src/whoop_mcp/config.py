@@ -65,6 +65,7 @@ class Settings:
     oidc_redirect_path: str = "/auth/callback"
     oidc_allowed_client_redirect_uris: tuple[str, ...] = ()
     oidc_verify_id_token: bool = False
+    oidc_trust_upstream_token: bool = False
     transport: str | None = None
     host: str | None = None
     port: int | None = None
@@ -95,6 +96,7 @@ class Settings:
                 os.getenv("WHOOP_MCP_OIDC_ALLOWED_CLIENT_REDIRECT_URIS")
             ),
             oidc_verify_id_token=_env_bool("WHOOP_MCP_OIDC_VERIFY_ID_TOKEN"),
+            oidc_trust_upstream_token=_env_bool("WHOOP_MCP_OIDC_TRUST_UPSTREAM_TOKEN"),
             transport=os.getenv("WHOOP_MCP_TRANSPORT"),
             host=os.getenv("WHOOP_MCP_HOST"),
             port=int(os.getenv("WHOOP_MCP_PORT", "8000")),
