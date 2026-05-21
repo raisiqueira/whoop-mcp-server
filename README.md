@@ -199,6 +199,7 @@ docker run --rm -it \
   -p 8000:8000 \
   --env-file .env \
   -v "$(pwd)/.whoop-token.json:/data/whoop-token.json" \
+  -v whoop-mcp-fastmcp-data:/data/fastmcp \
   whoop-mcp
 ```
 
@@ -247,9 +248,13 @@ WHOOP_MCP_OIDC_REDIRECT_PATH=/auth/callback
 Then restart:
 
 ```bash
-make compose-down
+docker compose down -v
 make compose-up
 ```
+
+`docker compose down -v` recreates the FastMCP OAuth state volume with the
+container user's permissions. It does not remove the bind-mounted
+`.whoop-token.json` file.
 
 For Raspberry Pi 4, `python:3.12-slim` is multi-arch, so the same `Dockerfile` should build on ARM64. If your Pi OS is 32-bit, move it to a 64-bit image first. The modern Python base images and FastMCP dependencies are much less predictable on 32-bit ARM.
 

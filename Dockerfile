@@ -12,7 +12,9 @@ COPY src ./src
 RUN python -m pip install --upgrade pip && \
     python -m pip install .
 
-RUN useradd --create-home --shell /usr/sbin/nologin appuser
+RUN useradd --create-home --shell /usr/sbin/nologin appuser && \
+    mkdir -p /data/fastmcp && \
+    chown -R appuser:appuser /data
 USER appuser
 
 ENV WHOOP_MCP_TRANSPORT=http \
