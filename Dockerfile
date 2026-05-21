@@ -20,6 +20,7 @@ ENV WHOOP_MCP_TRANSPORT=http \
     WHOOP_MCP_PORT=8000 \
     WHOOP_MCP_PATH=/mcp \
     WHOOP_MCP_STATELESS_HTTP=true \
+    FASTMCP_HOME=/data/fastmcp \
     WHOOP_TOKEN_FILE=/data/whoop-token.json
 
 VOLUME ["/data"]

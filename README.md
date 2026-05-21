@@ -187,6 +187,7 @@ That container command:
 - binds the server to `0.0.0.0:8000`
 - exposes the MCP endpoint at `/mcp`
 - mounts your local `.whoop-token.json` into `/data/whoop-token.json`
+- stores FastMCP OAuth proxy state under `/data/fastmcp`
 - reads WHOOP credentials from `.env`
 - enforces the auth mode configured in `.env`
 
@@ -227,6 +228,7 @@ The compose stack is defined in `docker-compose.yml` and:
 - builds from the local `Dockerfile`
 - binds the server only on `127.0.0.1:8000` for tunnel-friendly local exposure
 - mounts `./.whoop-token.json` into `/data/whoop-token.json`
+- persists FastMCP OAuth proxy state in the `fastmcp-oauth-data` volume
 - reads WHOOP credentials, static token settings, and OIDC settings from `.env`
 - restarts automatically with `unless-stopped`
 
@@ -330,6 +332,42 @@ Using FastMCP's built-in dev inspector:
 ```bash
 make inspect-fastmcp
 ```
+
+## Connect from Codex
+
+This repository includes a repo-local Codex plugin scaffold:
+
+- `plugins/whoop-mcp/.codex-plugin/plugin.json`
+- `plugins/whoop-mcp/.mcp.json`
+- `.agents/plugins/marketplace.json`
+
+The plugin points Codex at this hosted remote MCP endpoint:
+
+```text
+https://whoop.raisiqueira.io/mcp
+```
+
+To use it from Codex:
+
+1. Open this repository in Codex.
+2. Install the `WHOOP MCP` plugin from the local marketplace for this repo.
+3. If the server is running with `WHOOP_MCP_AUTH_MODE=oidc`, complete the OAuth flow when Codex prompts for it.
+4. Ask Codex to use the WHOOP MCP tools.
+
+## Connect from ChatGPT
+
+For ChatGPT, use the hosted remote MCP endpoint directly instead of the local Codex plugin.
+
+1. In ChatGPT, enable Developer Mode in `Settings -> Connectors -> Advanced`.
+2. Create an app for your remote MCP server.
+3. Enter this server URL:
+
+```text
+https://whoop.raisiqueira.io/mcp
+```
+
+4. If the server uses OIDC, complete the OAuth flow.
+5. Enable the imported tools in the app details page and use them from Developer Mode in chat.
 
 ## Suggested MCP config
 
