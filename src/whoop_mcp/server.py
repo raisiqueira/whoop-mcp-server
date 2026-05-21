@@ -44,6 +44,7 @@ def build_auth_provider() -> AuthProvider | None:
             "base_url": settings.public_base_url,
             "required_scopes": list(settings.oidc_scopes),
             "redirect_path": settings.oidc_redirect_path,
+            "verify_id_token": settings.oidc_verify_id_token,
         }
         if settings.oidc_allowed_client_redirect_uris:
             oidc_kwargs["allowed_client_redirect_uris"] = list(
@@ -100,6 +101,7 @@ def auth_status() -> dict[str, Any]:
             "redirect_path": settings.oidc_redirect_path,
             "required_scopes": list(settings.oidc_scopes),
             "allowed_client_redirect_uris": list(settings.oidc_allowed_client_redirect_uris),
+            "verify_id_token": settings.oidc_verify_id_token,
         }
     return status
 

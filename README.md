@@ -145,6 +145,7 @@ WHOOP_MCP_OIDC_CLIENT_ID=your_authentik_client_id
 WHOOP_MCP_OIDC_CLIENT_SECRET=your_authentik_client_secret
 WHOOP_MCP_OIDC_SCOPES=openid profile email
 WHOOP_MCP_OIDC_REDIRECT_PATH=/auth/callback
+WHOOP_MCP_OIDC_VERIFY_ID_TOKEN=true
 ```
 
 For Authentik, create an OAuth2/OpenID Provider and Application, then configure:
@@ -243,7 +244,12 @@ WHOOP_MCP_OIDC_CLIENT_ID=your_authentik_client_id
 WHOOP_MCP_OIDC_CLIENT_SECRET=your_authentik_client_secret
 WHOOP_MCP_OIDC_SCOPES=openid profile email
 WHOOP_MCP_OIDC_REDIRECT_PATH=/auth/callback
+WHOOP_MCP_OIDC_VERIFY_ID_TOKEN=true
 ```
+
+`WHOOP_MCP_OIDC_VERIFY_ID_TOKEN=true` tells FastMCP to validate Authentik's
+OIDC `id_token` when checking upstream identity. This is useful when the
+upstream access token is opaque or does not carry the JWT claims FastMCP expects.
 
 Then restart:
 
