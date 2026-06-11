@@ -12,11 +12,13 @@ from fastmcp.server.auth import (
     TokenVerifier,
 )
 from fastmcp.server.auth.oidc_proxy import OIDCProxy
+from starlette.middleware import Middleware
 
 from whoop_mcp.auth import TokenStore, build_authorization_url, exchange_code, refresh_token
 from whoop_mcp.client import WhoopClient
 from whoop_mcp.config import Settings
 from whoop_mcp.insights import build_health_overview
+from whoop_mcp.mcp_auth import WWWAuthenticateScopeMiddleware
 
 settings = Settings.from_env()
 token_store = TokenStore(settings.token_file)
@@ -95,7 +97,19 @@ mcp = FastMCP(
     ),
     auth=auth_provider,
 )
-app = mcp.http_app(path=settings.path, stateless_http=settings.stateless_http)
+
+
+def build_http_middleware() -> list[Middleware]:
+    if settings.auth_mode != "oidc":
+        return []
+    return [Middleware(WWWAuthenticateScopeMiddleware, scopes=settings.oidc_scopes)]
+
+
+app = mcp.http_app(
+    path=settings.path,
+    stateless_http=settings.stateless_http,
+    middleware=build_http_middleware(),
+)
 
 
 def _days_ago_iso(days: int) -> str:

@@ -20,6 +20,7 @@ DEFAULT_MCP_OIDC_SCOPES = (
     "openid",
     "profile",
     "email",
+    "offline_access",
 )
 
 

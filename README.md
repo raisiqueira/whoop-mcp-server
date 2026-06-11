@@ -143,7 +143,7 @@ WHOOP_MCP_BASE_URL=https://whoop.<your-domain>.com
 WHOOP_MCP_OIDC_CONFIG_URL=https://auth.example.com/application/o/whoop-mcp/.well-known/openid-configuration
 WHOOP_MCP_OIDC_CLIENT_ID=your_authentik_client_id
 WHOOP_MCP_OIDC_CLIENT_SECRET=your_authentik_client_secret
-WHOOP_MCP_OIDC_SCOPES=openid profile email
+WHOOP_MCP_OIDC_SCOPES=openid profile email offline_access
 WHOOP_MCP_OIDC_REDIRECT_PATH=/auth/callback
 WHOOP_MCP_OIDC_VERIFY_ID_TOKEN=false
 WHOOP_MCP_OIDC_TRUST_UPSTREAM_TOKEN=false
@@ -154,7 +154,7 @@ For Authentik, create an OAuth2/OpenID Provider and Application, then configure:
 - OpenID Configuration URL: `https://auth.example.com/application/o/whoop-mcp/.well-known/openid-configuration`
 - Redirect URI: `https://whoop.<your-domain>.com/auth/callback`
 - Client type: confidential
-- Scopes: at least `openid profile email`
+- Scopes: at least `openid profile email offline_access`
 
 The MCP endpoint stays:
 
@@ -243,7 +243,7 @@ WHOOP_MCP_BASE_URL=https://whoop.<your-domain>.com
 WHOOP_MCP_OIDC_CONFIG_URL=https://auth.example.com/application/o/whoop-mcp/.well-known/openid-configuration
 WHOOP_MCP_OIDC_CLIENT_ID=your_authentik_client_id
 WHOOP_MCP_OIDC_CLIENT_SECRET=your_authentik_client_secret
-WHOOP_MCP_OIDC_SCOPES=openid profile email
+WHOOP_MCP_OIDC_SCOPES=openid profile email offline_access
 WHOOP_MCP_OIDC_REDIRECT_PATH=/auth/callback
 WHOOP_MCP_OIDC_VERIFY_ID_TOKEN=false
 WHOOP_MCP_OIDC_TRUST_UPSTREAM_TOKEN=true
